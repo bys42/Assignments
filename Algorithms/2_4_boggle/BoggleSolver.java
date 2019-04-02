@@ -11,13 +11,32 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class BoggleSolver {
-    private class Node {
-        private char c;                 // character
-        private Node left, mid, right;  // left, middle, and right subtries
-        private boolean isWordEnd;      // value associated with string
+    private final StringBuilder stringBuilder = new StringBuilder();
+    private boolean[][] mark;
+    private int rowMax;
+    private int colMax;
+    private Node root;   // root of TST
+
+    // Initializes the data structure using the given array of strings as the dictionary.
+    // (You can assume each word in the dictionary contains only the uppercase letters A through Z.)
+    public BoggleSolver(String[] dictionary) {
+        if (dictionary == null) throw new IllegalArgumentException();
+
+        for (String word : dictionary) put(word);
     }
 
-    private Node root;   // root of TST
+    public static void main(String[] args) {
+        In in = new In(args[0]);
+        String[] dictionary = in.readAllStrings();
+        BoggleSolver solver = new BoggleSolver(dictionary);
+        BoggleBoard board = new BoggleBoard(args[1]);
+        int score = 0;
+        for (String word : solver.getAllValidWords(board)) {
+            StdOut.println(word);
+            score += solver.scoreOf(word);
+        }
+        StdOut.println("Score = " + score);
+    }
 
     private boolean contains(String key) {
         Node x = get(root, key, 0);
@@ -57,6 +76,7 @@ public class BoggleSolver {
         return x;
     }
 
+    // get nextNode of x which has char = c
     private Node getNode(Node x, char c) {
         if (x == null) return null;
 
@@ -65,30 +85,25 @@ public class BoggleSolver {
         return x;
     }
 
-    // Initializes the data structure using the given array of strings as the dictionary.
-    // (You can assume each word in the dictionary contains only the uppercase letters A through Z.)
-    public BoggleSolver(String[] dictionary) {
-        if (dictionary == null) throw new IllegalArgumentException();
-
-        for (String word : dictionary) put(word);
-    }
-
-    private boolean[][] mark;
-    private int rowMax;
-    private int colMax;
-    private StringBuilder wordBuffer = new StringBuilder();
-
     private void dfs(int row, int col, int d, Node x, Set<String> validWords, BoggleBoard board) {
         char c = board.getLetter(row, col);
 
         Node curr = getNode(x, c);
         if (curr == null) return;
 
-        wordBuffer.append(c);
+        if (c == 'Q') {
+            curr = getNode(curr.mid, 'U');
+            if (curr == null) return;
+            stringBuilder.append("QU");
+            d++;
+        }
+        else {
+            stringBuilder.append(c);
+        }
         mark[row][col] = true;
 
         if (d > 1 && curr.isWordEnd) {
-            validWords.add(wordBuffer.toString());
+            validWords.add(stringBuilder.toString());
         }
 
         int minAdjRow = row == 0 ? 0 : row - 1;
@@ -102,7 +117,13 @@ public class BoggleSolver {
                 dfs(i, j, d + 1, curr.mid, validWords, board);
             }
         }
-        wordBuffer.deleteCharAt(d);
+
+        if (c == 'Q') {
+            stringBuilder.delete(d - 1, d + 1);
+        }
+        else {
+            stringBuilder.deleteCharAt(d);
+        }
         mark[row][col] = false;
     }
 
@@ -120,7 +141,6 @@ public class BoggleSolver {
                 dfs(i, j, 0, root, validWords, board);
             }
         }
-        StdOut.println();
         return validWords;
     }
 
@@ -152,17 +172,10 @@ public class BoggleSolver {
         }
     }
 
-    public static void main(String[] args) {
-        In in = new In(args[0]);
-        String[] dictionary = in.readAllStrings();
-        BoggleSolver solver = new BoggleSolver(dictionary);
-        BoggleBoard board = new BoggleBoard(args[1]);
-        int score = 0;
-        for (String word : solver.getAllValidWords(board)) {
-            StdOut.println(word);
-            score += solver.scoreOf(word);
-        }
-        StdOut.println("Score = " + score);
+    private class Node {
+        private char c;                 // character
+        private Node left, mid, right;  // left, middle, and right subtries
+        private boolean isWordEnd;      // value associated with string
     }
 }
 
